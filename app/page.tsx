@@ -10,7 +10,7 @@ export default function Ajedrez() {
   const [menuPromocionBlanco, setMenuPromocionBlanco] = useState('hidden')
   const [menuPromocionNegro, setMenuPromocionNegro] = useState('hidden')
   const [turno, setTurno] = useState('blanco')
-  const [piezasAtacadas, setPiezasAtacadas] = useState<interfazTablero | null>(null);
+  const [piezasAtacadas, setPiezasAtacadas] = useState<interfazPeligrosa[] | null>(null);
 
   interface interfazTablero {
     posicion: string;
@@ -20,6 +20,12 @@ export default function Ajedrez() {
     colorCasilla: string;
     color: string;
     enPassant: boolean;
+  }
+  interface interfazPeligrosa {
+    posicion: string;
+    pieza: string;
+    color: string;
+    posicionAtacada: string;
   }
 
   let objetoTablero: interfazTablero[] = []
@@ -119,9 +125,36 @@ function limpiarAccesibles() {
 
 function verPeligrosas() {
   console.log("Viendo peligrosas!")
-  // tablero.map((casilla)=>{
-  //   movimientoPiezas(casilla);
-  // })
+  tablero.map((casilla)=>{
+    movimientoPiezas(casilla);
+  })
+
+  console.log(piezasAtacadas)
+}
+
+function marcarPeligrosas(arrayCasillas: interfazTablero[], posicionOriginal: interfazTablero){
+  arrayCasillas.map((casillaAtacada) => {
+  setPiezasAtacadas(prevPiezasAtacadas => {
+    let objeto: interfazPeligrosa = {
+      posicion: posicionOriginal.posicion,
+      pieza: posicionOriginal.pieza,
+      color: posicionOriginal.color,
+      posicionAtacada: casillaAtacada.posicion
+    }
+    if (prevPiezasAtacadas==null){
+      return [objeto]    
+    }
+    else if (!prevPiezasAtacadas.find((iteracion) => {
+      return iteracion.posicion == objeto.posicion && iteracion.pieza == objeto.pieza && iteracion.color == objeto.color && iteracion.posicionAtacada == objeto.posicionAtacada
+    })){
+      prevPiezasAtacadas?.push(objeto)
+    }
+    return prevPiezasAtacadas
+  })
+
+  })
+
+
 }
 
 
@@ -403,7 +436,7 @@ function movimientoPiezas(casilla: interfazTablero){
           for (let contador = 1; contador<8; contador++){
             let pieza = buscarCasilla(files[columna+contador]+fila)
             if (pieza && pieza.color!=casilla.color){
-              posiciones.push(pieza.posicion)
+              posiciones.push(pieza)
               if(pieza.color!="" && pieza.color!=casilla.color){
                 break
               }
@@ -418,7 +451,7 @@ function movimientoPiezas(casilla: interfazTablero){
           for (let contador = 1; contador<8; contador++){
             let pieza = buscarCasilla(files[columna-contador]+fila)
             if (pieza && pieza.color!=casilla.color){
-              posiciones.push(pieza.posicion)
+              posiciones.push(pieza)
               if(pieza.color!="" && pieza.color!=casilla.color){
                 break
               }
@@ -434,7 +467,7 @@ function movimientoPiezas(casilla: interfazTablero){
           for (let contador = 1; contador<8; contador++){
             let pieza = buscarCasilla(casilla.posicion[0]+(fila+contador))
             if (pieza && pieza.color!=casilla.color){
-              posiciones.push(pieza.posicion)
+              posiciones.push(pieza)
                if(pieza.color!="" && casilla.color!=pieza.color){
                 break
               }
@@ -449,7 +482,7 @@ function movimientoPiezas(casilla: interfazTablero){
           for (let contador = 1; contador<8; contador++){
             let pieza = buscarCasilla(casilla.posicion[0]+(fila-contador))
             if (pieza && pieza.color!=casilla.color){
-              posiciones.push(pieza.posicion)
+              posiciones.push(pieza)
               if(pieza.color!="" && pieza.color!=casilla.color){
                 break
               }
@@ -478,7 +511,7 @@ function movimientoAlfil(casilla: interfazTablero){
       for (let contador = 1; contador<7; contador++){
         let casillaBuscada = buscarCasilla(files[fila+contador]+(columna+contador))
         if(casillaBuscada && casillaBuscada.color!=casilla.color){
-          posiciones.push(casillaBuscada.posicion)
+          posiciones.push(casillaBuscada)
           if (casillaBuscada.color!="" && casillaBuscada.color!=casilla.color){
             break
           }          
@@ -492,7 +525,7 @@ function movimientoAlfil(casilla: interfazTablero){
       for (let contador = 1; contador<7; contador++){
         let casillaBuscada = buscarCasilla(files[fila-contador]+(columna+contador))
         if(casillaBuscada && casillaBuscada.color!=casilla.color){
-          posiciones.push(casillaBuscada.posicion)
+          posiciones.push(casillaBuscada)
           if (casillaBuscada.color!="" && casillaBuscada.color!=casilla.color){
             break
           }
@@ -506,7 +539,7 @@ function movimientoAlfil(casilla: interfazTablero){
       for (let contador = 1; contador<7; contador++){
         let casillaBuscada = buscarCasilla(files[fila+contador]+(columna-contador))
         if(casillaBuscada && casillaBuscada.color!=casilla.color){
-          posiciones.push(casillaBuscada.posicion)
+          posiciones.push(casillaBuscada)
           if (casillaBuscada.color!="" && casillaBuscada.color!=casilla.color){
             break
           }
@@ -520,7 +553,7 @@ function movimientoAlfil(casilla: interfazTablero){
       for (let contador = 1; contador<7; contador++){
         let casillaBuscada = buscarCasilla(files[fila-contador]+(columna-contador))
         if(casillaBuscada && casillaBuscada.color!=casilla.color){
-          posiciones.push(casillaBuscada.posicion)
+          posiciones.push(casillaBuscada)
           if (casillaBuscada.color!="" && casillaBuscada.color!=casilla.color){
             break
           }
@@ -558,7 +591,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
 
       if (elemento != null && elemento.pieza=="") {
-          posiciones.push(elemento.posicion);
+          posiciones.push(elemento);
         }
 
       }
@@ -568,7 +601,7 @@ function movimientoAlfil(casilla: interfazTablero){
       let elemento = buscarCasilla(casillaFutura);
 
       if (elemento != null && elemento.pieza=="" ) {
-        posiciones.push(elemento.posicion);
+        posiciones.push(elemento);
       }
 
 
@@ -583,17 +616,17 @@ function movimientoAlfil(casilla: interfazTablero){
         let posicionDiagonalDerecha = buscarCasilla(diagonalDerecha)
 
         if (posicionDiagonalIzquierda && posicionDiagonalIzquierda.pieza!="" && posicionDiagonalIzquierda.color=="negro"){
-          posiciones.push(posicionDiagonalIzquierda.posicion);
+          posiciones.push(posicionDiagonalIzquierda);
         }
         if (posicionDiagonalDerecha && posicionDiagonalDerecha.pieza !="" && posicionDiagonalDerecha.color=="negro"){
-          posiciones.push(posicionDiagonalDerecha.posicion);
+          posiciones.push(posicionDiagonalDerecha);
         }
 
         let posicionIzquierda = buscarCasilla(files[izquierda]+casilla.posicion[1])
 
         if(posicionIzquierda?.enPassant==true && posicionIzquierda.pieza=="peonNegro"){
           if(posicionDiagonalIzquierda){
-            posiciones.push(posicionDiagonalIzquierda.posicion);
+            posiciones.push(posicionDiagonalIzquierda);
           }
         }
 
@@ -601,7 +634,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
         if(posicionDerecha?.enPassant==true && posicionDerecha.pieza=="peonNegro"){
           if(posicionDiagonalDerecha){
-            posiciones.push(posicionDiagonalDerecha.posicion);
+            posiciones.push(posicionDiagonalDerecha);
           }
         }
 
@@ -622,7 +655,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
 
       if (elemento != null && elemento.pieza=="") {
-          posiciones.push(elemento.posicion);
+          posiciones.push(elemento);
         }
 
       }
@@ -632,7 +665,7 @@ function movimientoAlfil(casilla: interfazTablero){
       let elemento = buscarCasilla(casillaFutura);
 
       if (elemento != null && elemento.pieza=="") {
-        posiciones.push(elemento.posicion);
+        posiciones.push(elemento);
       }
 
         let posicionBase = files.indexOf(casilla.posicion[0]);
@@ -645,10 +678,10 @@ function movimientoAlfil(casilla: interfazTablero){
         let posicionDiagonalDerecha = buscarCasilla(diagonalDerecha)
 
         if (posicionDiagonalIzquierda && posicionDiagonalIzquierda.pieza!="" && posicionDiagonalIzquierda.color=="blanco"){
-          posiciones.push(posicionDiagonalIzquierda.posicion);
+          posiciones.push(posicionDiagonalIzquierda);
         }
         if (posicionDiagonalDerecha && posicionDiagonalDerecha.pieza!="" && posicionDiagonalDerecha.color=="blanco"){
-          posiciones.push(posicionDiagonalDerecha.posicion);
+          posiciones.push(posicionDiagonalDerecha);
         }
 
 
@@ -658,7 +691,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
         if(posicionIzquierda?.enPassant==true && posicionIzquierda.pieza=="peonBlanco"){
           if(posicionDiagonalIzquierda){
-            posiciones.push(posicionDiagonalIzquierda.posicion);
+            posiciones.push(posicionDiagonalIzquierda);
           }
         }
 
@@ -666,7 +699,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
         if(posicionDerecha?.enPassant==true  && posicionDerecha.pieza=="peonBlanco"){
           if(posicionDiagonalDerecha){
-            posiciones.push(posicionDiagonalDerecha.posicion);
+            posiciones.push(posicionDiagonalDerecha);
           }
 
         }
@@ -699,7 +732,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
             if (pieza){
               if(pieza.color!=casilla.color){
-                posiciones.push(pieza.posicion)
+                posiciones.push(pieza)
               }
             }
 
@@ -744,7 +777,7 @@ function movimientoAlfil(casilla: interfazTablero){
         filas.map((fila) => {
           let casillaBuscada = buscarCasilla(files[columnaOriginal+columna]+(Number(casilla.posicion[1])+fila))
           if (casillaBuscada && casillaBuscada.color!=casilla.color){
-            posiciones.push(casillaBuscada.posicion);
+            posiciones.push(casillaBuscada);
           }
         })
       })
@@ -768,7 +801,7 @@ function movimientoAlfil(casilla: interfazTablero){
         }
         
         if(unoIzquierda.pieza=="" && dosIzquierda.pieza==""  && tresIzquierda.pieza=="" && torreIzquierda.pieza.includes("torre") && torreIzquierda.color==piezaSeleccionada?.color && torreIzquierda.movido==false){
-          posiciones.push(tresIzquierda.posicion);
+          posiciones.push(tresIzquierda);
         }
         
         
@@ -784,7 +817,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
         if(unoDerecha.pieza=="" && dosDerecha.pieza==""  && torreDerecha.pieza.includes("torre") && torreIzquierda.color==piezaSeleccionada?.color && torreDerecha.movido==false){
           
-          posiciones.push(dosDerecha.posicion)
+          posiciones.push(dosDerecha)
         }
       }
 
@@ -797,8 +830,12 @@ function movimientoAlfil(casilla: interfazTablero){
       return
     }
 
-    marcarAccesibles(posiciones, casilla)
+    let posicionesLimpio = posiciones.map((casilla) => {
+      return casilla.posicion
+    })
 
+    marcarAccesibles(posicionesLimpio, casilla)
+    marcarPeligrosas(posiciones, casilla)
 }
 
 
