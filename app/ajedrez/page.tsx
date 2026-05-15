@@ -9,6 +9,8 @@ export default function Ajedrez() {
   const [piezaSeleccionada, setPiezaSeleccionada] = useState<interfazTablero | null>(null);
   const [menuPromocionBlanco, setMenuPromocionBlanco] = useState('hidden')
   const [menuPromocionNegro, setMenuPromocionNegro] = useState('hidden')
+  const [turno, setTurno] = useState('blanco')
+
   interface interfazTablero {
     posicion: string;
     movido: boolean;
@@ -16,7 +18,8 @@ export default function Ajedrez() {
     pieza: string;
     colorCasilla: string;
     color: string;
-    enPassant: boolean; //contador de turnos
+    enPassant: boolean;
+    peligrosa: number; //ver cuantas piezzas estan atacando a una determinada casilla
   }
 
   let objetoTablero: interfazTablero[] = []
@@ -96,6 +99,7 @@ export default function Ajedrez() {
         colorCasilla: colorCasilla,
         color: color,
         enPassant: false,
+        peligrosa: 0
       })
     })
   })
@@ -112,6 +116,11 @@ function limpiarAccesibles() {
     }))
   );
 }
+
+function verPeligrosas() {
+  
+}
+
 
   //Funcion para dado un array de posiciones, asignarlas como accesibles
 function marcarAccesibles(arrayPiezas: interfazTablero[], seleccion: interfazTablero) {
@@ -141,6 +150,8 @@ function marcarAccesibles(arrayPiezas: interfazTablero[], seleccion: interfazTab
     let capturaEnPassant = ""
     let passantEjecutado = false
     let enrocando = false
+    let nuevaPosicionTorre: interfazTablero
+    let torre: interfazTablero
 
     
 
@@ -173,13 +184,49 @@ function marcarAccesibles(arrayPiezas: interfazTablero[], seleccion: interfazTab
         if(piezaSeleccionada && piezaSeleccionada.pieza=="reyBlanco" || piezaSeleccionada && piezaSeleccionada.pieza=="reyNegro"  ){
           let indexOriginal = files.indexOf(piezaSeleccionada.posicion[0]);
           let indexBuscado = files.indexOf(casillaSeleccionada.posicion[0]);
-
           if (indexOriginal-indexBuscado>=2 || indexOriginal-indexBuscado<=-2){
             console.log("ENROCANDO!!!")
             enrocando=true;
+            if (indexOriginal-indexBuscado<=-2){
+              console.log("derecho")
+              let posibleTorre = buscarCasilla(files[indexBuscado+1]+piezaSeleccionada.posicion[1])
+              if (!posibleTorre){
+                return
+              }
+              torre = posibleTorre
+              console.log(torre)
+              if (torre?.pieza.includes("torre")){
+                let posiblePosicion = buscarCasilla(files[indexBuscado-1]+piezaSeleccionada.posicion[1])
+                if (posiblePosicion){
+                  nuevaPosicionTorre = posiblePosicion
+                }
+              }
+            }
+            else{
+              console.log("izquierdo")
+              let posibleTorre = buscarCasilla(files[indexBuscado-1]+piezaSeleccionada.posicion[1])
+              if (!posibleTorre){
+                return
+              }              
+              torre = posibleTorre
+              console.log(torre)
+              if (torre?.pieza.includes("torre")){
+                let posiblePosicion = buscarCasilla(files[indexBuscado+1]+piezaSeleccionada.posicion[1])
+                if (posiblePosicion){
+                  nuevaPosicionTorre = posiblePosicion
+                }              
+              }
+            }
+ 
+          
           }
         }
-
+    if(turno == "blanco"){
+      setTurno('negro');
+    }
+    else{
+      setTurno('blanco');
+    }
 
 
 
@@ -216,6 +263,26 @@ function marcarAccesibles(arrayPiezas: interfazTablero[], seleccion: interfazTab
         }
       }
 
+      //Si es la pieza donde deberia ir la torre en el enroque, mueve la torre.
+      if(nuevaPosicionTorre!=null && casilla.posicion == nuevaPosicionTorre.posicion){
+        return{
+          ...casilla,
+          pieza: torre.pieza,
+          color: torre.color,
+          movido: true,
+        }
+      }
+
+      //si es la casilla donde estaba la torre, lo borra.
+
+      if(torre!=null && casilla.posicion == torre.posicion){
+        return{
+          ...casilla,
+          pieza: "",
+          color: "",
+          enPassant: false
+        }
+      }
 
 
 
@@ -260,12 +327,38 @@ function marcarAccesibles(arrayPiezas: interfazTablero[], seleccion: interfazTab
   function moverPieza(casillaUsuario: string) {   
             
 
+
     let seleccion
     let casilla = buscarCasilla(casillaUsuario);
     
     if (!casilla) {
       return
     }
+
+
+    //Si has clicado en una casilla a la que te pueds mover
+    if (casilla.accesible == true && piezaSeleccionada != null) {
+      actualizarPosicion(casilla)
+
+      //Acabo la ejecucion para que no me marque la siguiente casilla como accesible immediatamente
+      return
+    }
+
+    //Si no has clicado en una casilla a la que te puedes mover
+    else {
+
+      limpiarAccesibles();
+    }
+
+
+
+    
+    if(casilla.color!=turno && casilla.color!=""){
+      return
+    }
+    console.log(turno)
+    console.log(casilla.color)
+
     seleccion = casilla
 
 
@@ -422,20 +515,6 @@ function movimientoAlfil(casilla: interfazTablero){
 
 
 
-
-    //Si has clicado en una casilla a la que te pueds mover
-    if (casilla.accesible == true && piezaSeleccionada != null) {
-      actualizarPosicion(casilla)
-
-      //Acabo la ejecucion para que no me marque la siguiente casilla como accesible immediatamente
-      return
-    }
-
-    //Si no has clicado en una casilla a la que te puedes mover
-    else {
-
-      limpiarAccesibles();
-    }
 
 
 
@@ -638,7 +717,7 @@ function movimientoAlfil(casilla: interfazTablero){
 
     //REY
 
-    if (casilla.pieza=="reyBlanco" || casilla.pieza =="reyBlanco"){ 
+    if (casilla.pieza=="reyBlanco" || casilla.pieza =="reyNegro"){ 
       let columnas = [1, 0, -1];
       let filas = [1, 0, -1]
       let columnaOriginal = files.indexOf(casilla.posicion[0]);
@@ -666,28 +745,32 @@ function movimientoAlfil(casilla: interfazTablero){
         let dosIzquierda = buscarCasilla(files[columnaOriginal-2]+casilla.posicion[1]);
         let tresIzquierda = buscarCasilla(files[columnaOriginal-3]+casilla.posicion[1]);
         let torreIzquierda = buscarCasilla(files[columnaOriginal-4]+casilla.posicion[1]);
-
         if(!unoIzquierda || !dosIzquierda || !tresIzquierda || !torreIzquierda){
           return
         }
-
-        if(unoIzquierda.pieza=="" && dosIzquierda.pieza==""  && tresIzquierda.pieza=="" && torreIzquierda.pieza=="torreBlanca" && torreIzquierda.movido==false){
+        
+        if(unoIzquierda.pieza=="" && dosIzquierda.pieza==""  && tresIzquierda.pieza=="" && torreIzquierda.pieza.includes("torre") && torreIzquierda.color==piezaSeleccionada?.color && torreIzquierda.movido==false){
           console.log("ENROQUE IZQUIERDO POSIBLE")
           posiciones.push(tresIzquierda);
         }
-
+        
         
         //Derecha
         let unoDerecha = buscarCasilla(files[columnaOriginal+1]+casilla.posicion[1]);
         let dosDerecha = buscarCasilla(files[columnaOriginal+2]+casilla.posicion[1]);
         let torreDerecha = buscarCasilla(files[columnaOriginal+3]+casilla.posicion[1]);
-
+        
         if(!unoDerecha || !dosDerecha || !torreDerecha){
           return
         }
+        console.log("entro")
+        console.log(unoDerecha)
+        console.log(dosDerecha)
+        console.log(torreDerecha)
 
-        if(unoDerecha.pieza=="" && dosDerecha.pieza==""  && torreDerecha.pieza=="torreBlanca" && torreDerecha.movido==false){
+        if(unoDerecha.pieza=="" && dosDerecha.pieza==""  && torreIzquierda.pieza.includes("torre") && torreIzquierda.color==piezaSeleccionada?.color && torreDerecha.movido==false){
           console.log("ENROQUE DERECHO POSIBLE")
+          
           posiciones.push(dosDerecha)
         }
       }
@@ -704,6 +787,8 @@ function movimientoAlfil(casilla: interfazTablero){
     console.log(posiciones)
     marcarAccesibles(posiciones, seleccion)
 
+
+    
   }
 
 
@@ -727,6 +812,7 @@ function movimientoAlfil(casilla: interfazTablero){
     }))
     setMenuPromocionBlanco('hidden')
     setMenuPromocionNegro('hidden')
+
 }
 
 
@@ -734,11 +820,14 @@ function movimientoAlfil(casilla: interfazTablero){
 
   return (
     <div className="flex" id="contenedorPrincipal">
+      <div>
+      <span>Turno de {turno}</span>
       <div className="h-200 w-200 grid grid-rows-8 grid-cols-8 *:aspect-square" id="contenedorTablero">
         {tablero.map((casilla) => (
           <div key={casilla.posicion} id={casilla.posicion} className={`text-emerald-500 text-7xl text-center ` + casilla.colorCasilla} data-accesible={false} data-pieza={casilla.pieza} data-movido={false} onClick={((e) => moverPieza(casilla.posicion))}> {casilla.pieza && <img src={"/ajedrez/" + casilla.pieza + ".png"}></img>} {casilla.accesible == true && <div>x</div>} </div>
         ))}
       </div>
+        </div>
 
         <div className={`text-center justify-center m-auto grow flex `+menuPromocionBlanco} id="promociones">
 
