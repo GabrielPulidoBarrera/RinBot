@@ -123,6 +123,8 @@ function limpiarAccesibles() {
   );
 }
 
+
+//Mostrar por panatlla las casillas atacadas
 function verPeligrosas() {
   console.log("Viendo peligrosas!")
   tablero.map((casilla)=>{
@@ -147,7 +149,7 @@ function marcarPeligrosas(arrayCasillas: interfazTablero[], posicionOriginal: in
     else if (!prevPiezasAtacadas.find((iteracion) => {
       return iteracion.posicion == objeto.posicion && iteracion.pieza == objeto.pieza && iteracion.color == objeto.color && iteracion.posicionAtacada == objeto.posicionAtacada
     })){
-      prevPiezasAtacadas?.push(objeto)
+    return [...prevPiezasAtacadas, objeto];   // new array
     }
     return prevPiezasAtacadas
   })
@@ -358,7 +360,6 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
 
     limpiarAccesibles();
 
-    verPeligrosas();
   }
 
 
@@ -401,17 +402,59 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
     }
 
 
-    
+      let casillasAtacadas = calcularAtaques()
     
     if(casilla.color!=turno && casilla.color!=""){
       return
     }
     
-    movimientoPiezas(casilla)
+    let posiciones = movimientoPiezas(casilla)
+    if (posiciones==null){
+      return
+    }
+
+    
+      console.log("POSICIONES!")
+      console.log(posiciones)
+
+      if (casilla.pieza.includes("rey")){
+
+
+    posiciones = posiciones.filter((posibleMovimiento) => {
+        if (casillasAtacadas.find((casillaAtacada: interfazPeligrosa) => {
+          console.log(casillaAtacada.color)
+          console.log(casilla.color)
+          console.log(posibleMovimiento.color)
+          return casillaAtacada.posicionAtacada == posibleMovimiento.posicion && casilla.color != casillaAtacada.color
+        }) != null){
+          return false;
+        }
+        else{
+          return true;
+        }
+
+    })
+    }
+
+    console.log(posiciones);
+
+
+
+
+    let posicionesLimpio = posiciones.map((casilla) => {
+      return casilla.posicion
+    })
+
+
+    marcarAccesibles(posicionesLimpio, casilla)
 
 
     
   }
+
+
+
+
 
 
 function movimientoPiezas(casilla: interfazTablero){
@@ -777,9 +820,10 @@ function movimientoAlfil(casilla: interfazTablero){
         filas.map((fila) => {
           let casillaBuscada = buscarCasilla(files[columnaOriginal+columna]+(Number(casilla.posicion[1])+fila))
           if (casillaBuscada && casillaBuscada.color!=casilla.color){
-            posiciones.push(casillaBuscada);
-          }
-        })
+            
+
+              posiciones.push(casillaBuscada);
+        }})
       })
 
 
@@ -800,7 +844,7 @@ function movimientoAlfil(casilla: interfazTablero){
           return
         }
         
-        if(unoIzquierda.pieza=="" && dosIzquierda.pieza==""  && tresIzquierda.pieza=="" && torreIzquierda.pieza.includes("torre") && torreIzquierda.color==piezaSeleccionada?.color && torreIzquierda.movido==false){
+        if(unoIzquierda.pieza=="" && dosIzquierda.pieza==""  && tresIzquierda.pieza=="" && torreIzquierda.pieza.includes("torre") && torreIzquierda.color==casilla?.color && torreIzquierda.movido==false){
           posiciones.push(tresIzquierda);
         }
         
@@ -815,7 +859,7 @@ function movimientoAlfil(casilla: interfazTablero){
         }
 
 
-        if(unoDerecha.pieza=="" && dosDerecha.pieza==""  && torreDerecha.pieza.includes("torre") && torreIzquierda.color==piezaSeleccionada?.color && torreDerecha.movido==false){
+        if(unoDerecha.pieza=="" && dosDerecha.pieza==""  && torreDerecha.pieza.includes("torre") && torreDerecha.color==casilla?.color && torreDerecha.movido==false){
           
           posiciones.push(dosDerecha)
         }
@@ -830,15 +874,30 @@ function movimientoAlfil(casilla: interfazTablero){
       return
     }
 
-    let posicionesLimpio = posiciones.map((casilla) => {
-      return casilla.posicion
-    })
+    return posiciones
 
-    marcarAccesibles(posicionesLimpio, casilla)
-    marcarPeligrosas(posiciones, casilla)
 }
 
+//Calcular ataques del enemigo
 
+function calcularAtaques(){
+  let posiciones: interfazPeligrosa[] = [];
+  tablero.map((casilla: interfazTablero) => {
+    if (casilla.pieza!=""){
+      let movimientos = movimientoPiezas(casilla)
+      
+      movimientos?.map((movimiento: interfazTablero) => {
+        posiciones.push({
+      posicion: casilla.posicion,
+      pieza: casilla.pieza,
+      color: casilla.color,
+      posicionAtacada: movimiento.posicion
+      })
+      })
+    }
+  })
+  return (posiciones)
+}
 
 
 
@@ -899,7 +958,7 @@ function movimientoAlfil(casilla: interfazTablero){
           </div>
 
         </div>
-        <button onClick={verPeligrosas}>hola</button>
+        <button onClick={calcularAtaques}>hola</button>
 
       </div>
 
@@ -909,4 +968,3 @@ function movimientoAlfil(casilla: interfazTablero){
 
 }
 
-// IDEA: EN CADA CASILLA LE COLOCAS SI ES PELIGROSA O NO.
