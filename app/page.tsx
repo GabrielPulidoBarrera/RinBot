@@ -11,7 +11,7 @@ export default function Ajedrez() {
   const [menuPromocionNegro, setMenuPromocionNegro] = useState('hidden')
   const [turno, setTurno] = useState('blanco')
   const [piezasAtacadas, setPiezasAtacadas] = useState<interfazPeligrosa[] | null>(null);
-
+  const [jaque, setJaque] = useState('');
   interface interfazTablero {
     posicion: string;
     movido: boolean;
@@ -279,10 +279,23 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
       setTurno('blanco');
     }
 
+    //Ver si hay jaque
+    if (piezaSeleccionada==null){
+      return
+    }
+      let hayJaque = verSiJaque(casillaSeleccionada, piezaSeleccionada)
 
-
-
-
+    console.log("HayJaque")
+    console.log(hayJaque)
+    if (hayJaque){
+        console.log("jaque!")
+    if(turno == "blanco"){
+      setJaque('negro');
+    }
+    else{
+      setJaque('blanco');
+    }
+    }
 
 
 
@@ -359,9 +372,54 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
   
 
     limpiarAccesibles();
-
+  
   }
 
+function verSiJaque(casilla: interfazTablero, piezaProbada: interfazTablero){
+
+    // Casilla = casilla donde el usuario ha hecho click
+
+    let rey = tablero.find((e: interfazTablero) => {
+      return e.pieza.includes("rey")
+    })
+
+    let posiciones = calcularAtaques();
+    console.log(posiciones)
+
+    if (!rey){
+      return false
+    }
+    
+    let posibleCaballo = movimientoCaballo(rey);
+    let posibleTorre = movimientoTorre(rey);
+    let posibleAlfil = movimientoAlfil(rey)
+
+    console.log("ALFIL")
+    console.log(posibleAlfil)
+    console.log(casilla)
+
+
+    let caballo = posibleCaballo.some((e) => {
+      if (e.posicion == casilla.posicion && piezaProbada?.pieza.includes("caballo") && piezaProbada.color != rey.color){
+        return true
+      
+      }
+    })
+    let torre = posibleTorre.some((e) => {
+      if (e.posicion == casilla.posicion && piezaProbada?.pieza.includes("torre") && piezaProbada.color != rey.color || e.posicion == casilla.posicion && piezaProbada?.pieza.includes("reina") && piezaProbada.color != rey.color){
+        return true
+      
+      }
+    })
+    let alfil = posibleAlfil.some((e) => {
+      if (e.posicion == casilla.posicion && piezaProbada?.pieza.includes("alfil") && piezaProbada.color != rey.color || e.posicion == casilla.posicion && piezaProbada?.pieza.includes("reina") && piezaProbada.color != rey.color){
+                return true
+
+      }
+    })
+  return caballo || torre || alfil;   
+
+  }
 
 
 
@@ -415,16 +473,12 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
 
     
       console.log("POSICIONES!")
-      console.log(posiciones)
 
       if (casilla.pieza.includes("rey")){
 
 
     posiciones = posiciones.filter((posibleMovimiento) => {
         if (casillasAtacadas.find((casillaAtacada: interfazPeligrosa) => {
-          console.log(casillaAtacada.color)
-          console.log(casilla.color)
-          console.log(posibleMovimiento.color)
           return casillaAtacada.posicionAtacada == posibleMovimiento.posicion && casilla.color != casillaAtacada.color
         }) != null){
           return false;
@@ -436,9 +490,27 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
     })
     }
 
-    console.log(posiciones);
 
 
+    console.log("POSICIONES")
+    console.log(posiciones)
+
+    console.log(jaque)
+    console.log(turno)
+
+    if (jaque == turno){
+      let contador = 0
+      posiciones.map((e) => {
+        let resultado = verSiJaque(e, e)
+        if (resultado){
+          console.log ("SLICE!")
+          posiciones.splice(contador, 1)
+        }
+        else{
+          contador++
+        }
+      })
+    }
 
 
     let posicionesLimpio = posiciones.map((casilla) => {
@@ -456,16 +528,10 @@ function marcarAccesibles(arrayPiezas: string[], seleccion: interfazTablero) {
 
 
 
-
-function movimientoPiezas(casilla: interfazTablero){
-
-
-
-
-    
     //TORRE
     
   function movimientoTorre(casilla: interfazTablero){
+      let posiciones = []
 
         
       
@@ -535,6 +601,7 @@ function movimientoPiezas(casilla: interfazTablero){
             }                 
           }
 
+          return posiciones
           
         }
 
@@ -544,6 +611,7 @@ function movimientoPiezas(casilla: interfazTablero){
 
 function movimientoAlfil(casilla: interfazTablero){
 
+      let posiciones = []
 
       let fila = files.indexOf(casilla.posicion[0]);
       let columna = Number(casilla.posicion[1]);
@@ -605,11 +673,52 @@ function movimientoAlfil(casilla: interfazTablero){
           break
         }
       }
+      return posiciones
+}
 
+function movimientoCaballo(casilla: interfazTablero){
+
+  let posiciones: interfazTablero[] = []
+
+      let fila = files.indexOf(casilla.posicion[0]);
+      let columna = Number(casilla.posicion[1]);
+
+      let arrayFilas = [-2, -1, +1, +2]
+      let arrayColumnas = [-2, -1, +1, +2]
+
+      arrayColumnas.map((filaActual) => {
+        arrayFilas.map((columnaActual) => {
+
+          if (filaActual+columnaActual==3 || filaActual+columnaActual==-3 || filaActual+columnaActual==-1 || filaActual+columnaActual==+1 ){
+
+            let pieza = buscarCasilla(files[fila+filaActual]+(columnaActual+columna))
+
+            if (pieza){
+              if(pieza.color!=casilla.color){
+                posiciones.push(pieza)
+              }
+            }
+
+          }
+
+        })
+      })
+      return posiciones
+  
 }
 
 
 
+
+
+
+
+function movimientoPiezas(casilla: interfazTablero){
+
+
+
+
+    
 
 
 
@@ -759,54 +868,37 @@ function movimientoAlfil(casilla: interfazTablero){
 
     if (casilla.pieza=="caballoBlanco" || casilla.pieza=="caballoNegro"){
 
-
-      let fila = files.indexOf(casilla.posicion[0]);
-      let columna = Number(casilla.posicion[1]);
-
-      let arrayFilas = [-2, -1, +1, +2]
-      let arrayColumnas = [-2, -1, +1, +2]
-
-      arrayColumnas.map((filaActual) => {
-        arrayFilas.map((columnaActual) => {
-
-          if (filaActual+columnaActual==3 || filaActual+columnaActual==-3 || filaActual+columnaActual==-1 || filaActual+columnaActual==+1 ){
-
-            let pieza = buscarCasilla(files[fila+filaActual]+(columnaActual+columna))
-
-            if (pieza){
-              if(pieza.color!=casilla.color){
-                posiciones.push(pieza)
-              }
-            }
-
-          }
-
-        })
-      })
-
-
+      let posicionCaballo = movimientoCaballo(casilla)
+      posiciones = posiciones.concat(posicionCaballo)
     }
 
     //ALFIL
 
     if (casilla.pieza=="alfilBlanco" || casilla.pieza=="alfilNegro"){
 
-      movimientoAlfil(casilla)
+      let posicionAlfil = movimientoAlfil(casilla)
+      posiciones = posiciones.concat(posicionAlfil)
 
     }
 
     //TORRE
 
     if (casilla.pieza=="torreBlanca" || casilla.pieza=="torreNegra"){
-      movimientoTorre(casilla)
+      let posicionesTorre = movimientoTorre(casilla)
+      posiciones = posiciones.concat(posicionesTorre)
 
     }
 
     //REINA
 
     if (casilla.pieza=="reinaBlanca" || casilla.pieza=="reinaNegra"){
-      movimientoAlfil(casilla)
-      movimientoTorre(casilla)
+      let posicionAlfil = movimientoAlfil(casilla)
+      let posicionesTorre = movimientoTorre(casilla)
+
+
+      posiciones = posiciones.concat(posicionAlfil)
+      posiciones = posiciones.concat(posicionesTorre)
+
     }
 
     //REY
